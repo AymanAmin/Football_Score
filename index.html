@@ -39,6 +39,12 @@
     <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
     <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
     <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+    <symbol id="i-cloud" viewBox="0 0 24 24"><path d="M17.5 19H7a5 5 0 1 1 1.1-9.88A6 6 0 0 1 19.5 11 4 4 0 0 1 17.5 19Z"/><path d="m9 14 2 2 4-4"/></symbol>
+    <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 9a7 7 0 0 1 11.6-2L20 9M4 15l2.3 2a7 7 0 0 0 11.6-2"/></symbol>
+    <symbol id="i-login" viewBox="0 0 24 24"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5m5 5H3"/></symbol>
+    <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4m5 14 5-5-5-5m5 5H9"/></symbol>
+    <symbol id="i-eye" viewBox="0 0 24 24"><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12Z"/><circle cx="12" cy="12" r="3"/></symbol>
+    <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
   </svg>
 
   <header class="topbar">
@@ -49,6 +55,11 @@
       </a>
       <div class="topbar__actions">
         <span class="offline-badge" id="offlineBadge" hidden>دون إنترنت</span>
+        <button class="sync-pill is-local" id="cloudStatusButton" type="button" aria-label="حالة الحفظ السحابي" title="الحفظ السحابي">
+          <span class="sync-pill__dot" aria-hidden="true"></span>
+          <svg><use href="#i-cloud"></use></svg>
+          <span id="cloudStatusText">محلي</span>
+        </button>
         <button class="icon-button install-quick" id="installQuickButton" type="button" aria-label="تثبيت التطبيق" title="تثبيت التطبيق">
           <svg><use href="#i-download"></use></svg>
         </button>
@@ -57,6 +68,7 @@
   </header>
 
   <main id="mainContent" class="main-content" tabindex="-1">
+    <div class="readonly-banner" id="readOnlyBanner" hidden><svg><use href="#i-eye"></use></svg><span id="readOnlyBannerText">أنت تعرض نتائج مشتركة بصلاحية المشاهدة فقط.</span></div>
     <section class="view is-active" data-view="home" aria-labelledby="homeTitle">
       <div class="hero-card">
         <div class="field-lines" aria-hidden="true"><span></span></div>
@@ -178,13 +190,44 @@
           <div class="settings-icon"><svg><use href="#i-download"></use></svg></div>
           <div><h2>ثبّت التطبيق على الهاتف</h2><p>افتح سجل الملاعب من الشاشة الرئيسية واستخدمه حتى دون اتصال بالإنترنت.</p><button class="button button--accent-dark" id="installSettingsButton" type="button">تثبيت الآن</button></div>
         </article>
+        <article class="settings-card settings-card--cloud card">
+          <div class="settings-icon settings-icon--cloud"><svg><use href="#i-cloud"></use></svg></div>
+          <div class="settings-card__body">
+            <div class="settings-title-line"><h2>الحفظ السحابي</h2><span class="cloud-badge" id="cloudAccountBadge">اختياري</span></div>
+            <p id="cloudDescription">اربط حسابًا مجانيًا لحفظ بياناتك على الإنترنت واستعادتها على أي جهاز، مع استمرار العمل دون إنترنت.</p>
+            <div class="workspace-picker" id="cloudWorkspacePanel" hidden>
+              <label for="cloudWorkspace"><span>مساحة النتائج</span><select id="cloudWorkspace"></select></label>
+              <span class="workspace-role" id="cloudWorkspaceRole">مالك</span>
+            </div>
+            <div class="cloud-account" id="cloudAccount" hidden><strong id="cloudAccountEmail"></strong><small id="cloudLastSync">لم تتم المزامنة بعد</small></div>
+            <div class="button-row">
+              <button class="button button--primary" id="cloudPrimaryAction" type="button"><svg><use href="#i-login"></use></svg> تسجيل الدخول</button>
+              <button class="button button--outline" id="cloudSyncNow" type="button" hidden><svg><use href="#i-refresh"></use></svg> مزامنة الآن</button>
+              <button class="button button--soft" id="cloudConfigure" type="button">إعداد الاتصال</button>
+              <button class="button button--danger-outline" id="cloudSignOut" type="button" hidden><svg><use href="#i-logout"></use></svg> تسجيل الخروج</button>
+            </div>
+            <div class="readonly-notice" id="cloudReadonlyNotice" hidden><svg><use href="#i-eye"></use></svg><span>هذه النتائج للعرض فقط. يمكن للمالك تغيير صلاحيتك إلى «تعديل» في أي وقت.</span></div>
+            <section class="members-panel" id="cloudMembersPanel" hidden>
+              <div class="members-panel__heading"><div><span class="section-kicker">المشاركة والصلاحيات</span><h3>المستخدمون المشاركون</h3></div><svg><use href="#i-shield"></use></svg></div>
+              <p>أضف بريد المستخدم وحدد إن كان يستطيع المشاهدة فقط أو تعديل اللاعبين والنتائج.</p>
+              <form class="member-form" id="cloudMemberForm" novalidate>
+                <label class="field field--stack" for="cloudMemberEmail"><span>بريد المستخدم</span><input id="cloudMemberEmail" type="email" inputmode="email" autocomplete="email" dir="ltr" placeholder="friend@example.com" required></label>
+                <label class="field field--stack" for="cloudMemberRole"><span>الصلاحية</span><select id="cloudMemberRole"><option value="viewer">مشاهدة فقط</option><option value="editor">مشاهدة وتعديل</option></select></label>
+                <button class="button button--primary" id="cloudMemberSubmit" type="submit"><svg><use href="#i-plus"></use></svg> إضافة المستخدم</button>
+              </form>
+              <div id="cloudMemberMessage" class="form-message" role="alert" hidden></div>
+              <div class="members-list" id="cloudMembersList"></div>
+              <div class="secure-note"><svg><use href="#i-info"></use></svg><span>أرسل رابط التطبيق للمستخدم. عليه التسجيل أو الدخول بنفس البريد الذي أضفته.</span></div>
+            </section>
+          </div>
+        </article>
         <article class="settings-card card">
           <div class="settings-icon settings-icon--soft"><svg><use href="#i-upload"></use></svg></div>
           <div><h2>النسخ الاحتياطي</h2><p>نزّل نسخة JSON تحفظ اللاعبين والمباريات، أو استعد نسخة سابقة.</p><div class="button-row"><button class="button button--outline" id="exportData" type="button">تنزيل نسخة</button><label class="button button--soft" for="importData">استعادة نسخة</label><input id="importData" type="file" accept="application/json,.json" hidden></div></div>
         </article>
         <article class="settings-card card">
           <div class="settings-icon settings-icon--soft"><svg><use href="#i-info"></use></svg></div>
-          <div><h2>عن التطبيق</h2><p>جميع بياناتك محفوظة داخل هذا الجهاز فقط. لا يتم إرسال النتائج إلى أي خادم.</p><div class="data-summary" id="dataSummary"></div></div>
+          <div><h2>عن التطبيق</h2><p id="dataPrivacyDescription">تُحفظ البيانات على الجهاز أولاً. ويمكنك تفعيل المزامنة الآمنة بحسابك لاستعادتها على أجهزتك.</p><div class="data-summary" id="dataSummary"></div></div>
         </article>
         <article class="settings-card settings-card--danger card">
           <div><h2>إعادة ضبط البيانات</h2><p>حذف جميع اللاعبين والمباريات نهائيًا من هذا الجهاز.</p><button class="button button--danger-outline" id="resetData" type="button">مسح كل البيانات</button></div>
@@ -233,8 +276,44 @@
     </form>
   </dialog>
 
+  <dialog id="cloudDialog" class="app-dialog app-dialog--cloud">
+    <div class="cloud-dialog-shell">
+      <button class="dialog-close" id="cloudDialogClose" type="button" aria-label="إغلاق"><svg><use href="#i-x"></use></svg></button>
+      <div class="dialog-icon"><svg><use href="#i-cloud"></use></svg></div>
+      <h2 id="cloudDialogTitle">الحفظ السحابي</h2>
+      <p id="cloudDialogIntro">إعداد مجاني وآمن باستخدام Supabase.</p>
+
+      <section id="cloudSetupPanel">
+        <div class="setup-steps-mini"><span>١. أنشئ مشروع Supabase مجانيًا</span><span>٢. شغّل ملف <b>supabase/schema.sql</b></span><span>٣. أدخل رابط المشروع والمفتاح العام</span></div>
+        <form id="cloudConfigForm" class="cloud-form" novalidate>
+          <label class="field field--stack" for="supabaseUrl"><span>Project URL</span><input id="supabaseUrl" type="url" inputmode="url" autocomplete="url" dir="ltr" placeholder="https://xxxx.supabase.co" required></label>
+          <label class="field field--stack" for="supabaseAnonKey"><span>Publishable / anon key</span><input id="supabaseAnonKey" type="password" autocomplete="off" dir="ltr" placeholder="sb_publishable_... أو eyJ..." required></label>
+          <div class="secure-note"><svg><use href="#i-info"></use></svg><span>استخدم المفتاح العام فقط. لا تضع مفتاح <b>secret</b> أو <b>service_role</b> هنا مطلقًا.</span></div>
+          <div id="cloudConfigMessage" class="form-message" role="alert" hidden></div>
+          <button class="button button--primary button--wide" type="submit">حفظ الاتصال والمتابعة</button>
+        </form>
+      </section>
+
+      <section id="cloudAuthPanel" hidden>
+        <div class="auth-tabs" role="tablist" aria-label="خيارات الحساب">
+          <button class="is-active" type="button" role="tab" aria-selected="true" data-auth-mode="login">تسجيل الدخول</button>
+          <button type="button" role="tab" aria-selected="false" data-auth-mode="signup">حساب جديد</button>
+        </div>
+        <form id="cloudAuthForm" class="cloud-form" novalidate>
+          <label class="field field--stack" for="cloudEmail"><span>البريد الإلكتروني</span><input id="cloudEmail" type="email" inputmode="email" autocomplete="email" dir="ltr" placeholder="name@example.com" required></label>
+          <label class="field field--stack" for="cloudPassword"><span>كلمة المرور</span><input id="cloudPassword" type="password" minlength="6" autocomplete="current-password" dir="ltr" required></label>
+          <div id="cloudAuthMessage" class="form-message" role="alert" hidden></div>
+          <button class="button button--primary button--wide" id="cloudAuthSubmit" type="submit">تسجيل الدخول والمزامنة</button>
+        </form>
+        <button class="text-button" id="cloudBackToConfig" type="button">تغيير إعداد اتصال Supabase</button>
+      </section>
+    </div>
+  </dialog>
+
   <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
   <canvas id="reportCanvas" width="1080" height="1350" hidden></canvas>
+  <script src="cloud-config.js" defer></script>
+  <script src="cloud-sync.js" defer></script>
   <script src="app.js" defer></script>
 </body>
 </html>

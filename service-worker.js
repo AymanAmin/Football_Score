@@ -1,9 +1,11 @@
-const CACHE_NAME = "football-score-v1.0.1";
+const CACHE_NAME = "football-score-v1.2.0";
 const APP_SHELL = [
   "./",
   "./index.html",
   "./styles.css",
   "./app.js",
+  "./cloud-config.js",
+  "./cloud-sync.js",
   "./manifest.webmanifest",
   "./icons/icon.svg",
   "./icons/icon-192.png",
@@ -26,6 +28,8 @@ self.addEventListener("activate", (event) => {
 
 self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
+  const requestUrl = new URL(event.request.url);
+  if (requestUrl.hostname.endsWith(".supabase.co")) return;
 
   if (event.request.mode === "navigate") {
     event.respondWith(

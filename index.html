@@ -1,0 +1,240 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0c2b24">
+  <meta name="description" content="تطبيق عربي لتسجيل مباريات كرة القدم بين الأصدقاء ومتابعة النتائج والإحصائيات.">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="سجل الملاعب">
+  <title>سجل الملاعب | نتائج كرة القدم</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#mainContent">انتقل إلى المحتوى</a>
+
+  <svg class="svg-sprite" aria-hidden="true" focusable="false">
+    <symbol id="i-home" viewBox="0 0 24 24"><path d="m3 10 9-7 9 7v10a1 1 0 0 1-1 1h-5v-7H9v7H4a1 1 0 0 1-1-1V10Z"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+    <symbol id="i-ball" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m12 7 3 2-1 4h-4L9 9l3-2Zm-3 6-3 2m8-2 4 2m-9-6L6 8m9 1 3-1m-8 9-1 3m5-3 1 3"/></symbol>
+    <symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm13 10v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></symbol>
+    <symbol id="i-chart" viewBox="0 0 24 24"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/></symbol>
+    <symbol id="i-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-2.83 2.83-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.55V21h-4v-.08A1.7 1.7 0 0 0 8.95 19.4a1.7 1.7 0 0 0-1.88.34l-.06.06-2.83-2.83.06-.06A1.7 1.7 0 0 0 4.58 15 1.7 1.7 0 0 0 3 14H3v-4h.08A1.7 1.7 0 0 0 4.6 8.95a1.7 1.7 0 0 0-.34-1.88l-.06-.06 2.83-2.83.06.06A1.7 1.7 0 0 0 9 4.58 1.7 1.7 0 0 0 10 3V3h4v.08a1.7 1.7 0 0 0 1.05 1.52 1.7 1.7 0 0 0 1.88-.34l.06-.06 2.83 2.83-.06.06A1.7 1.7 0 0 0 19.42 9 1.7 1.7 0 0 0 21 10v4h-.08A1.7 1.7 0 0 0 19.4 15Z"/></symbol>
+    <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 21h14"/></symbol>
+    <symbol id="i-share" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><path d="m8.6 10.5 6.8-4m-6.8 7 6.8 4"/></symbol>
+    <symbol id="i-calendar" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 11h18"/></symbol>
+    <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0V4Zm10 2h3v2a4 4 0 0 1-4 4M7 6H4v2a4 4 0 0 0 4 4"/></symbol>
+    <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4L16.5 3.5Z"/></symbol>
+    <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2m3 0-1 15H6L5 6m5 4v7m4-7v7"/></symbol>
+    <symbol id="i-swap" viewBox="0 0 24 24"><path d="M7 7h12l-3-3m3 3-3 3M17 17H5l3 3m-3-3 3-3"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></symbol>
+    <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7 9m5-5 5 5M5 20h14"/></symbol>
+    <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v5m0-9h.01"/></symbol>
+    <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4 4L19 6"/></symbol>
+    <symbol id="i-more" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/></symbol>
+  </svg>
+
+  <header class="topbar">
+    <div class="topbar__inner">
+      <a class="brand" href="#home" aria-label="الصفحة الرئيسية">
+        <img src="icons/icon.svg" alt="" width="44" height="44">
+        <span><strong>سجل الملاعب</strong><small id="todayLabel">نتائجكم في مكان واحد</small></span>
+      </a>
+      <div class="topbar__actions">
+        <span class="offline-badge" id="offlineBadge" hidden>دون إنترنت</span>
+        <button class="icon-button install-quick" id="installQuickButton" type="button" aria-label="تثبيت التطبيق" title="تثبيت التطبيق">
+          <svg><use href="#i-download"></use></svg>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main id="mainContent" class="main-content" tabindex="-1">
+    <section class="view is-active" data-view="home" aria-labelledby="homeTitle">
+      <div class="hero-card">
+        <div class="field-lines" aria-hidden="true"><span></span></div>
+        <div class="hero-card__content">
+          <p class="eyebrow"><span class="live-dot"></span> موسم الأصدقاء</p>
+          <h1 id="homeTitle">كل مباراة تحكي قصة.</h1>
+          <p>سجّل النتيجة، تابع المنافسة، واعرف من يتصدر الملعب بالأرقام.</p>
+          <div class="hero-card__actions">
+            <a class="button button--accent" href="#match"><svg><use href="#i-plus"></use></svg> تسجيل مباراة</a>
+            <button class="button button--ghost-light" id="heroAddPlayer" type="button"><svg><use href="#i-users"></use></svg> إضافة لاعب</button>
+          </div>
+        </div>
+        <div class="hero-score" aria-hidden="true"><span>3</span><i>:</i><span>2</span></div>
+      </div>
+
+      <div class="stats-grid" id="overviewStats" aria-label="ملخص الإحصائيات"></div>
+
+      <div class="section-heading">
+        <div><span class="section-kicker">آخر صافرة</span><h2>أحدث المباريات</h2></div>
+        <a href="#reports">كل التقارير <svg><use href="#i-chevron"></use></svg></a>
+      </div>
+      <div id="recentMatches" class="matches-list"></div>
+    </section>
+
+    <section class="view" data-view="match" aria-labelledby="matchTitle">
+      <div class="page-heading">
+        <div><span class="section-kicker">جولة جديدة</span><h1 id="matchTitle">سجّل نتيجة المباراة</h1><p>اختر لاعبين وحدد عدد أهداف كل واحد منهما.</p></div>
+      </div>
+
+      <form id="matchForm" class="match-form card" novalidate>
+        <div class="match-form__pitch" aria-hidden="true"><span></span></div>
+        <div class="player-score player-score--one">
+          <label for="playerOne">اللاعب الأول</label>
+          <select id="playerOne" name="playerOne" required></select>
+          <div class="score-input-wrap">
+            <button type="button" class="score-step" data-score-target="scoreOne" data-delta="1" aria-label="زيادة أهداف اللاعب الأول">+</button>
+            <input id="scoreOne" name="scoreOne" type="number" inputmode="numeric" min="0" max="99" value="0" required aria-label="أهداف اللاعب الأول">
+            <button type="button" class="score-step" data-score-target="scoreOne" data-delta="-1" aria-label="إنقاص أهداف اللاعب الأول">−</button>
+          </div>
+        </div>
+        <button class="swap-button" id="swapPlayers" type="button" aria-label="تبديل اللاعبين والنتيجة"><svg><use href="#i-swap"></use></svg></button>
+        <div class="score-divider"><span>VS</span></div>
+        <div class="player-score player-score--two">
+          <label for="playerTwo">اللاعب الثاني</label>
+          <select id="playerTwo" name="playerTwo" required></select>
+          <div class="score-input-wrap">
+            <button type="button" class="score-step" data-score-target="scoreTwo" data-delta="1" aria-label="زيادة أهداف اللاعب الثاني">+</button>
+            <input id="scoreTwo" name="scoreTwo" type="number" inputmode="numeric" min="0" max="99" value="0" required aria-label="أهداف اللاعب الثاني">
+            <button type="button" class="score-step" data-score-target="scoreTwo" data-delta="-1" aria-label="إنقاص أهداف اللاعب الثاني">−</button>
+          </div>
+        </div>
+        <div class="match-meta-fields">
+          <label class="field"><span><svg><use href="#i-calendar"></use></svg> تاريخ ووقت المباراة</span><input id="playedAt" name="playedAt" type="datetime-local" required></label>
+          <label class="field"><span>ملاحظة <small>(اختياري)</small></span><input id="matchNote" name="matchNote" type="text" maxlength="80" placeholder="مثلاً: ملعب الحي"></label>
+        </div>
+        <div id="matchFormMessage" class="form-message" role="alert" hidden></div>
+        <button class="button button--primary button--wide" type="submit"><svg><use href="#i-check"></use></svg> حفظ النتيجة</button>
+      </form>
+
+      <div class="inline-tip"><svg><use href="#i-info"></use></svg><p><strong>لا تجد اللاعب؟</strong> يمكنك <button id="matchAddPlayer" type="button">إضافته الآن</button> دون فقد النتيجة المدخلة.</p></div>
+    </section>
+
+    <section class="view" data-view="players" aria-labelledby="playersTitle">
+      <div class="page-heading page-heading--actions">
+        <div><span class="section-kicker">قائمة الفريق</span><h1 id="playersTitle">اللاعبون</h1><p>أضف اللاعبين مرة واحدة، ثم اخترهم في أي مباراة.</p></div>
+        <button class="button button--primary" id="addPlayerButton" type="button"><svg><use href="#i-plus"></use></svg> لاعب جديد</button>
+      </div>
+      <div class="toolbar card">
+        <label class="search-field" for="playerSearch"><svg><use href="#i-search"></use></svg><input id="playerSearch" type="search" placeholder="ابحث باسم اللاعب"><span class="sr-only">ابحث باسم اللاعب</span></label>
+        <div class="filter-chips" aria-label="تصفية اللاعبين">
+          <button type="button" class="chip is-active" data-player-filter="all">الكل</button>
+          <button type="button" class="chip" data-player-filter="active">النشطون</button>
+          <button type="button" class="chip" data-player-filter="archived">المؤرشفون</button>
+        </div>
+      </div>
+      <div id="playersList" class="players-grid"></div>
+    </section>
+
+    <section class="view" data-view="reports" aria-labelledby="reportsTitle">
+      <div class="page-heading page-heading--actions">
+        <div><span class="section-kicker">الأرقام لا تكذب</span><h1 id="reportsTitle">التقارير والإحصائيات</h1><p>ترتيب شامل، مواجهات مباشرة، وأبرز أرقام الموسم.</p></div>
+        <button class="button button--outline" type="button" data-share-report="summary"><svg><use href="#i-share"></use></svg> مشاركة الملخص</button>
+      </div>
+
+      <div class="report-tabs" role="tablist" aria-label="أنواع التقارير">
+        <button class="report-tab is-active" role="tab" aria-selected="true" data-report-tab="ranking"><svg><use href="#i-trophy"></use></svg> الترتيب</button>
+        <button class="report-tab" role="tab" aria-selected="false" data-report-tab="headtohead"><svg><use href="#i-users"></use></svg> المواجهات</button>
+        <button class="report-tab" role="tab" aria-selected="false" data-report-tab="records"><svg><use href="#i-chart"></use></svg> أرقام الموسم</button>
+      </div>
+
+      <div class="report-panel is-active" data-report-panel="ranking">
+        <div class="report-controls card">
+          <div><span class="control-label">رتّب اللاعبين حسب</span><div class="filter-chips" id="rankingMetric"><button class="chip is-active" data-metric="wins">الأكثر فوزًا</button><button class="chip" data-metric="goals">الأكثر تهديفًا</button><button class="chip" data-metric="points">النقاط</button><button class="chip" data-metric="winRate">نسبة الفوز</button></div></div>
+          <button class="icon-text-button" type="button" data-share-report="ranking"><svg><use href="#i-share"></use></svg> مشاركة كصورة</button>
+        </div>
+        <div id="podium" class="podium"></div>
+        <div id="rankingTable" class="ranking-card card"></div>
+      </div>
+
+      <div class="report-panel" data-report-panel="headtohead">
+        <div class="headtohead-selector card">
+          <div class="h2h-title"><span class="versus-badge">VS</span><div><h2>اختر طرفي المواجهة</h2><p>شاهد الإجمالي وكل المباريات بينهما.</p></div></div>
+          <div class="h2h-selects"><label>اللاعب الأول<select id="h2hPlayerOne"></select></label><span>ضد</span><label>اللاعب الثاني<select id="h2hPlayerTwo"></select></label></div>
+        </div>
+        <div id="headToHeadReport"></div>
+      </div>
+
+      <div class="report-panel" data-report-panel="records">
+        <div class="report-share-row"><p>أبرز الإنجازات والأرقام المسجلة في جميع المباريات.</p><button class="icon-text-button" type="button" data-share-report="records"><svg><use href="#i-share"></use></svg> مشاركة كصورة</button></div>
+        <div id="recordsGrid" class="records-grid"></div>
+        <div id="activityReport" class="card activity-card"></div>
+      </div>
+    </section>
+
+    <section class="view" data-view="settings" aria-labelledby="settingsTitle">
+      <div class="page-heading"><div><span class="section-kicker">التحكم والنسخ الاحتياطي</span><h1 id="settingsTitle">الإعدادات</h1><p>ثبّت التطبيق واحفظ نسخة من بياناتك وقتما تشاء.</p></div></div>
+      <div class="settings-grid">
+        <article class="settings-card settings-card--install card">
+          <div class="settings-icon"><svg><use href="#i-download"></use></svg></div>
+          <div><h2>ثبّت التطبيق على الهاتف</h2><p>افتح سجل الملاعب من الشاشة الرئيسية واستخدمه حتى دون اتصال بالإنترنت.</p><button class="button button--accent-dark" id="installSettingsButton" type="button">تثبيت الآن</button></div>
+        </article>
+        <article class="settings-card card">
+          <div class="settings-icon settings-icon--soft"><svg><use href="#i-upload"></use></svg></div>
+          <div><h2>النسخ الاحتياطي</h2><p>نزّل نسخة JSON تحفظ اللاعبين والمباريات، أو استعد نسخة سابقة.</p><div class="button-row"><button class="button button--outline" id="exportData" type="button">تنزيل نسخة</button><label class="button button--soft" for="importData">استعادة نسخة</label><input id="importData" type="file" accept="application/json,.json" hidden></div></div>
+        </article>
+        <article class="settings-card card">
+          <div class="settings-icon settings-icon--soft"><svg><use href="#i-info"></use></svg></div>
+          <div><h2>عن التطبيق</h2><p>جميع بياناتك محفوظة داخل هذا الجهاز فقط. لا يتم إرسال النتائج إلى أي خادم.</p><div class="data-summary" id="dataSummary"></div></div>
+        </article>
+        <article class="settings-card settings-card--danger card">
+          <div><h2>إعادة ضبط البيانات</h2><p>حذف جميع اللاعبين والمباريات نهائيًا من هذا الجهاز.</p><button class="button button--danger-outline" id="resetData" type="button">مسح كل البيانات</button></div>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="التنقل الرئيسي">
+    <a href="#home" data-nav="home" class="is-active"><svg><use href="#i-home"></use></svg><span>الرئيسية</span></a>
+    <a href="#match" data-nav="match"><span class="nav-main-action"><svg><use href="#i-plus"></use></svg></span><span>تسجيل</span></a>
+    <a href="#players" data-nav="players"><svg><use href="#i-users"></use></svg><span>اللاعبون</span></a>
+    <a href="#reports" data-nav="reports"><svg><use href="#i-chart"></use></svg><span>التقارير</span></a>
+    <a href="#settings" data-nav="settings"><svg><use href="#i-settings"></use></svg><span>الإعدادات</span></a>
+  </nav>
+
+  <dialog id="playerDialog" class="app-dialog">
+    <form method="dialog" id="playerForm">
+      <button class="dialog-close" value="cancel" type="submit" aria-label="إغلاق"><svg><use href="#i-x"></use></svg></button>
+      <div class="dialog-icon"><svg><use href="#i-users"></use></svg></div>
+      <h2 id="playerDialogTitle">إضافة لاعب جديد</h2>
+      <p>سيظهر اللاعب مباشرة في قائمة اختيار المباريات.</p>
+      <input id="editingPlayerId" type="hidden">
+      <label class="field field--stack" for="playerName"><span>اسم اللاعب</span><input id="playerName" name="playerName" type="text" maxlength="40" autocomplete="off" placeholder="مثلاً: أيمن" required></label>
+      <div id="playerFormMessage" class="form-message" role="alert" hidden></div>
+      <button class="button button--primary button--wide" value="default" type="submit">حفظ اللاعب</button>
+    </form>
+  </dialog>
+
+  <dialog id="confirmDialog" class="app-dialog app-dialog--confirm">
+    <form method="dialog">
+      <div class="dialog-icon dialog-icon--warning"><svg><use href="#i-info"></use></svg></div>
+      <h2 id="confirmTitle">هل أنت متأكد؟</h2>
+      <p id="confirmText"></p>
+      <div class="dialog-actions"><button class="button button--soft" value="cancel">إلغاء</button><button class="button button--danger" id="confirmAction" value="confirm">تأكيد</button></div>
+    </form>
+  </dialog>
+
+  <dialog id="installDialog" class="app-dialog">
+    <form method="dialog">
+      <button class="dialog-close" value="cancel" type="submit" aria-label="إغلاق"><svg><use href="#i-x"></use></svg></button>
+      <div class="dialog-icon"><svg><use href="#i-download"></use></svg></div>
+      <h2>تثبيت سجل الملاعب</h2>
+      <div id="installInstructions" class="install-instructions"></div>
+      <button class="button button--primary button--wide" value="cancel">فهمت</button>
+    </form>
+  </dialog>
+
+  <div id="toastRegion" class="toast-region" aria-live="polite" aria-atomic="true"></div>
+  <canvas id="reportCanvas" width="1080" height="1350" hidden></canvas>
+  <script src="app.js" defer></script>
+</body>
+</html>

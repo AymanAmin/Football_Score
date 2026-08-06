@@ -2,7 +2,8 @@
   "use strict";
 
   const STORAGE_KEY = "footballScoreApp.v1";
-  const APP_VERSION = 1;
+  const WORKSPACE_STORAGE_PREFIX = "footballScoreWorkspace.v1.";
+  const APP_VERSION = 2;
   const PLAYER_COLORS = ["#12674c", "#3157a4", "#a64d63", "#7651a6", "#b76b26", "#287d89", "#824b35", "#527234"];
   const ARABIC_LOCALE = "ar-SA-u-ca-gregory";
 
@@ -47,6 +48,44 @@
     installDialog: $("#installDialog"),
     installInstructions: $("#installInstructions"),
     offlineBadge: $("#offlineBadge"),
+    cloudStatusButton: $("#cloudStatusButton"),
+    cloudStatusText: $("#cloudStatusText"),
+    cloudAccountBadge: $("#cloudAccountBadge"),
+    cloudDescription: $("#cloudDescription"),
+    cloudAccount: $("#cloudAccount"),
+    cloudAccountEmail: $("#cloudAccountEmail"),
+    cloudLastSync: $("#cloudLastSync"),
+    cloudPrimaryAction: $("#cloudPrimaryAction"),
+    cloudSyncNow: $("#cloudSyncNow"),
+    cloudConfigure: $("#cloudConfigure"),
+    cloudSignOut: $("#cloudSignOut"),
+    cloudWorkspacePanel: $("#cloudWorkspacePanel"),
+    cloudWorkspace: $("#cloudWorkspace"),
+    cloudWorkspaceRole: $("#cloudWorkspaceRole"),
+    cloudReadonlyNotice: $("#cloudReadonlyNotice"),
+    cloudMembersPanel: $("#cloudMembersPanel"),
+    cloudMemberForm: $("#cloudMemberForm"),
+    cloudMemberEmail: $("#cloudMemberEmail"),
+    cloudMemberRole: $("#cloudMemberRole"),
+    cloudMemberSubmit: $("#cloudMemberSubmit"),
+    cloudMemberMessage: $("#cloudMemberMessage"),
+    cloudMembersList: $("#cloudMembersList"),
+    readOnlyBanner: $("#readOnlyBanner"),
+    readOnlyBannerText: $("#readOnlyBannerText"),
+    cloudDialog: $("#cloudDialog"),
+    cloudDialogClose: $("#cloudDialogClose"),
+    cloudSetupPanel: $("#cloudSetupPanel"),
+    cloudAuthPanel: $("#cloudAuthPanel"),
+    cloudConfigForm: $("#cloudConfigForm"),
+    supabaseUrl: $("#supabaseUrl"),
+    supabaseAnonKey: $("#supabaseAnonKey"),
+    cloudConfigMessage: $("#cloudConfigMessage"),
+    cloudAuthForm: $("#cloudAuthForm"),
+    cloudEmail: $("#cloudEmail"),
+    cloudPassword: $("#cloudPassword"),
+    cloudAuthMessage: $("#cloudAuthMessage"),
+    cloudAuthSubmit: $("#cloudAuthSubmit"),
+    cloudBackToConfig: $("#cloudBackToConfig"),
     toastRegion: $("#toastRegion"),
     reportCanvas: $("#reportCanvas")
   };
@@ -56,6 +95,7 @@
   let rankingMetric = "wins";
   let activeReportTab = "ranking";
   let deferredInstallPrompt = null;
+  let cloudAuthMode = "login";
 
   const dateFormatter = new Intl.DateTimeFormat(ARABIC_LOCALE, {
     year: "numeric",
@@ -67,10 +107,39 @@
     minute: "2-digit"
   });
 
+  const cloud = window.FootballCloud?.create({
+    getState: () => state,
+    hasLocalState: () => localStorage.getItem(STORAGE_KEY) !== null,
+    applyState: async (remoteState) => {
+      state = normalizeState(remoteState);
+      saveState({ touch: false, sync: false });
+      renderAll();
+      toast("تم تحميل أحدث بياناتك من السحابة.");
+    },
+    onWorkspaceChange: async (nextWorkspace, previousWorkspace) => {
+      if (previousWorkspace?.ownerId) {
+        localStorage.setItem(`${WORKSPACE_STORAGE_PREFIX}${previousWorkspace.ownerId}`, JSON.stringify(state));
+      }
+      const cached = localStorage.getItem(`${WORKSPACE_STORAGE_PREFIX}${nextWorkspace.ownerId}`);
+      try {
+        state = cached ? normalizeState(JSON.parse(cached)) : createInitialState();
+      } catch {
+        state = createInitialState();
+      }
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      renderAll();
+    },
+    onStatus: (snapshot) => renderCloudUi(snapshot),
+    onAuthChange: (snapshot) => renderCloudUi(snapshot),
+    onMessage: (message, type) => toast(message, type)
+  }) || null;
+
   function createInitialState() {
+    const now = new Date().toISOString();
     return {
       version: APP_VERSION,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
       players: [],
       matches: []
     };
@@ -84,6 +153,7 @@
     const matches = Array.isArray(value.matches) ? value.matches : [];
 
     clean.createdAt = isValidDate(value.createdAt) ? value.createdAt : clean.createdAt;
+    clean.updatedAt = isValidDate(value.updatedAt) ? value.updatedAt : clean.createdAt;
     clean.players = players
       .filter((player) => player && typeof player.id === "string" && typeof player.name === "string")
       .map((player, index) => ({
@@ -122,9 +192,14 @@
     }
   }
 
-  function saveState() {
+  function saveState({ touch = true, sync = true } = {}) {
     try {
+      state.version = APP_VERSION;
+      if (touch) state.updatedAt = new Date().toISOString();
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      const activeOwnerId = cloud?.snapshot().activeWorkspace?.ownerId;
+      if (activeOwnerId) localStorage.setItem(`${WORKSPACE_STORAGE_PREFIX}${activeOwnerId}`, JSON.stringify(state));
+      if (sync) cloud?.schedulePush();
       return true;
     } catch (error) {
       console.error("Could not save football data", error);
@@ -589,6 +664,281 @@
     renderDataSummary();
   }
 
+  function formatSyncTime(value) {
+    if (!isValidDate(value)) return "لم تتم المزامنة بعد";
+    return `آخر مزامنة: ${formatDate(value)}، ${formatTime(value)}`;
+  }
+
+  function renderCloudMembers(members = []) {
+    if (!members.length) {
+      elements.cloudMembersList.innerHTML = `<div class="members-empty">لم تضف مستخدمين بعد. أضف بريدًا وحدد الصلاحية.</div>`;
+      return;
+    }
+    elements.cloudMembersList.innerHTML = members.map((member) => `
+      <div class="member-row">
+        <div class="member-row__identity"><strong>${escapeHtml(member.email)}</strong><small>أضيف في ${escapeHtml(formatDate(member.createdAt))}</small></div>
+        <select data-member-role="${escapeHtml(member.email)}" aria-label="صلاحية ${escapeHtml(member.email)}">
+          <option value="viewer"${member.role === "viewer" ? " selected" : ""}>مشاهدة فقط</option>
+          <option value="editor"${member.role === "editor" ? " selected" : ""}>مشاهدة وتعديل</option>
+        </select>
+        <button class="member-remove" type="button" data-remove-member="${escapeHtml(member.email)}" aria-label="إلغاء وصول ${escapeHtml(member.email)}"><svg><use href="#i-trash"></use></svg></button>
+      </div>`).join("");
+  }
+
+  function applyMutationAccess(readOnly) {
+    document.body.classList.toggle("is-readonly", readOnly);
+    elements.readOnlyBanner.hidden = !readOnly;
+    const controls = [
+      ...$$("input, select, button", elements.matchForm),
+      $("#heroAddPlayer"),
+      $("#matchAddPlayer"),
+      $("#addPlayerButton"),
+      elements.importData,
+      $("#resetData")
+    ].filter(Boolean);
+    controls.forEach((control) => { control.disabled = readOnly; });
+    if (readOnly && elements.playerDialog.open) elements.playerDialog.close();
+  }
+
+  function renderCloudUi(snapshot = cloud?.snapshot()) {
+    const current = snapshot || { configured: false, authenticated: false, status: "local" };
+    const labels = {
+      local: "محلي",
+      ready: "جاهز",
+      pending: "بانتظار الحفظ",
+      syncing: "جارٍ الحفظ",
+      synced: "محفوظ سحابيًا",
+      error: "تعذر الحفظ",
+      offline: "دون اتصال"
+    };
+    const status = Object.hasOwn(labels, current.status) ? current.status : "local";
+    elements.cloudStatusButton.className = `sync-pill is-${status}`;
+    elements.cloudStatusText.textContent = labels[status];
+    elements.cloudStatusButton.title = current.statusDetail || labels[status];
+    elements.cloudStatusButton.setAttribute("aria-label", `حالة الحفظ: ${labels[status]}`);
+
+    elements.cloudAccountBadge.className = "cloud-badge";
+    const activeWorkspace = current.activeWorkspace;
+    const roleLabels = { owner: "مالك", editor: "محرر", viewer: "مشاهد" };
+    const readOnly = Boolean(current.authenticated && current.canWrite === false);
+    if (current.authenticated) {
+      elements.cloudAccountBadge.textContent = "متصل";
+      elements.cloudAccountBadge.classList.add("is-connected");
+      elements.cloudDescription.textContent = readOnly
+        ? "تعرض الآن نتائج مشتركة بصلاحية المشاهدة فقط؛ التقارير والمشاركة متاحة دون تعديل البيانات."
+        : current.statusDetail || "تتم مزامنة اللاعبين والمباريات تلقائيًا، مع استمرار الحفظ المحلي دون إنترنت.";
+    } else if (status === "error") {
+      elements.cloudAccountBadge.textContent = "تحتاج مراجعة";
+      elements.cloudAccountBadge.classList.add("is-error");
+      elements.cloudDescription.textContent = current.statusDetail || "تعذر الاتصال بالحفظ السحابي.";
+    } else if (current.configured) {
+      elements.cloudAccountBadge.textContent = "جاهز للربط";
+      elements.cloudDescription.textContent = "تم حفظ اتصال Supabase على هذا الجهاز. سجّل الدخول لبدء المزامنة.";
+    } else {
+      elements.cloudAccountBadge.textContent = "اختياري";
+      elements.cloudDescription.textContent = "اربط حسابًا مجانيًا لحفظ بياناتك على الإنترنت واستعادتها على أي جهاز، مع استمرار العمل دون إنترنت.";
+    }
+
+    elements.cloudAccount.hidden = !current.authenticated;
+    elements.cloudAccountEmail.textContent = current.user?.email || "حساب Supabase";
+    elements.cloudLastSync.textContent = formatSyncTime(current.lastSyncedAt);
+    elements.cloudWorkspacePanel.hidden = !current.authenticated;
+    elements.cloudWorkspace.innerHTML = (current.workspaces || []).map((workspace) => `<option value="${escapeHtml(workspace.ownerId)}">${escapeHtml(workspace.label)} — ${roleLabels[workspace.role] || "مشترك"}</option>`).join("");
+    elements.cloudWorkspace.value = activeWorkspace?.ownerId || "";
+    elements.cloudWorkspace.disabled = !current.authenticated || (current.workspaces || []).length < 2 || status === "syncing";
+    elements.cloudWorkspaceRole.textContent = roleLabels[activeWorkspace?.role] || "محلي";
+    elements.cloudWorkspaceRole.className = `workspace-role${activeWorkspace?.role === "viewer" ? " is-viewer" : ""}`;
+    elements.cloudPrimaryAction.hidden = current.authenticated;
+    elements.cloudPrimaryAction.innerHTML = `<svg><use href="#${current.configured ? "i-login" : "i-cloud"}"></use></svg> ${current.configured ? "تسجيل الدخول" : "بدء الإعداد"}`;
+    elements.cloudSyncNow.hidden = !current.authenticated;
+    elements.cloudSignOut.hidden = !current.authenticated;
+    elements.cloudReadonlyNotice.hidden = !readOnly;
+    elements.cloudMembersPanel.hidden = !current.isOwner;
+    elements.readOnlyBannerText.textContent = `أنت تعرض نتائج ${activeWorkspace?.ownerEmail || "مشتركة"} بصلاحية المشاهدة فقط.`;
+    renderCloudMembers(current.isOwner ? current.members : []);
+    applyMutationAccess(readOnly);
+  }
+
+  function setCloudAuthMode(mode) {
+    cloudAuthMode = mode === "signup" ? "signup" : "login";
+    $$('[data-auth-mode]').forEach((button) => {
+      const active = button.dataset.authMode === cloudAuthMode;
+      button.classList.toggle("is-active", active);
+      button.setAttribute("aria-selected", String(active));
+    });
+    elements.cloudPassword.autocomplete = cloudAuthMode === "signup" ? "new-password" : "current-password";
+    elements.cloudAuthSubmit.textContent = cloudAuthMode === "signup" ? "إنشاء الحساب والمزامنة" : "تسجيل الدخول والمزامنة";
+    hideFormMessage(elements.cloudAuthMessage);
+  }
+
+  function showCloudPanel(panel) {
+    const setup = panel === "setup";
+    elements.cloudSetupPanel.hidden = !setup;
+    elements.cloudAuthPanel.hidden = setup;
+    if (setup) {
+      const config = cloud?.snapshot().config;
+      elements.supabaseUrl.value = config?.supabaseUrl || "";
+      elements.supabaseAnonKey.value = config?.supabaseAnonKey || "";
+      hideFormMessage(elements.cloudConfigMessage);
+      window.setTimeout(() => elements.supabaseUrl.focus(), 80);
+    } else {
+      setCloudAuthMode("login");
+      window.setTimeout(() => elements.cloudEmail.focus(), 80);
+    }
+  }
+
+  function openCloudDialog(forceSetup = false) {
+    if (!cloud) {
+      toast("تعذر تحميل وحدة الحفظ السحابي.", "error");
+      return;
+    }
+    showCloudPanel(forceSetup || !cloud.snapshot().configured ? "setup" : "auth");
+    if (!elements.cloudDialog.open) elements.cloudDialog.showModal();
+  }
+
+  function saveCloudConfig(event) {
+    event.preventDefault();
+    hideFormMessage(elements.cloudConfigMessage);
+    try {
+      cloud.saveConfig(elements.supabaseUrl.value, elements.supabaseAnonKey.value);
+      showCloudPanel("auth");
+      toast("تم حفظ اتصال Supabase على هذا الجهاز.");
+    } catch (error) {
+      showFormMessage(elements.cloudConfigMessage, error.message);
+    }
+  }
+
+  async function submitCloudAuth(event) {
+    event.preventDefault();
+    const email = elements.cloudEmail.value.trim();
+    const password = elements.cloudPassword.value;
+    hideFormMessage(elements.cloudAuthMessage);
+    if (!elements.cloudEmail.checkValidity()) {
+      showFormMessage(elements.cloudAuthMessage, "أدخل بريدًا إلكترونيًا صحيحًا.");
+      return;
+    }
+    if (password.length < 6) {
+      showFormMessage(elements.cloudAuthMessage, "اكتب كلمة مرور من ٦ أحرف على الأقل.");
+      return;
+    }
+
+    elements.cloudAuthSubmit.disabled = true;
+    elements.cloudAuthSubmit.setAttribute("aria-busy", "true");
+    try {
+      const result = cloudAuthMode === "signup" ? await cloud.signUp(email, password) : await cloud.signIn(email, password);
+      if (result.confirmationRequired) {
+        setCloudAuthMode("login");
+        elements.cloudEmail.value = email;
+        showFormMessage(elements.cloudAuthMessage, "تم إنشاء الحساب. افتح رسالة التأكيد في بريدك، ثم عد وسجّل الدخول.");
+      } else {
+        elements.cloudPassword.value = "";
+        elements.cloudDialog.close();
+        toast("تم تسجيل الدخول وتفعيل المزامنة.");
+      }
+    } catch (error) {
+      showFormMessage(elements.cloudAuthMessage, error.message);
+    } finally {
+      elements.cloudAuthSubmit.disabled = false;
+      elements.cloudAuthSubmit.removeAttribute("aria-busy");
+      renderCloudUi();
+    }
+  }
+
+  async function syncCloudNow() {
+    if (!cloud?.snapshot().authenticated) {
+      openCloudDialog(!cloud?.snapshot().configured);
+      return;
+    }
+    elements.cloudSyncNow.disabled = true;
+    try {
+      await cloud.refreshWorkspaces();
+      const result = await cloud.syncNow();
+      if (!result?.offline && result?.direction !== "down") toast("تمت مزامنة البيانات بنجاح.");
+    } catch (error) {
+      toast(error.message, "error");
+    } finally {
+      elements.cloudSyncNow.disabled = false;
+    }
+  }
+
+  async function signOutCloud() {
+    try {
+      await cloud?.signOut();
+      renderCloudUi();
+      toast("تم تسجيل الخروج. ستبقى بياناتك الشخصية محفوظة على هذا الجهاز.");
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  }
+
+  async function switchCloudWorkspace() {
+    const ownerId = elements.cloudWorkspace.value;
+    elements.cloudWorkspace.disabled = true;
+    try {
+      await cloud.selectWorkspace(ownerId);
+      renderAll();
+      renderCloudUi();
+      toast("تم تبديل مساحة النتائج.");
+    } catch (error) {
+      renderCloudUi();
+      toast(error.message, "error");
+    }
+  }
+
+  async function addCloudMember(event) {
+    event.preventDefault();
+    hideFormMessage(elements.cloudMemberMessage);
+    elements.cloudMemberSubmit.disabled = true;
+    try {
+      await cloud.addMember(elements.cloudMemberEmail.value, elements.cloudMemberRole.value);
+      elements.cloudMemberEmail.value = "";
+      elements.cloudMemberRole.value = "viewer";
+      renderCloudUi();
+      toast("تمت إضافة المستخدم. أرسل له رابط التطبيق ليدخل بنفس البريد.");
+    } catch (error) {
+      showFormMessage(elements.cloudMemberMessage, error.message);
+    } finally {
+      elements.cloudMemberSubmit.disabled = false;
+    }
+  }
+
+  async function updateCloudMember(select) {
+    select.disabled = true;
+    try {
+      await cloud.updateMember(select.dataset.memberRole, select.value);
+      renderCloudUi();
+      toast("تم تحديث صلاحية المستخدم فورًا.");
+    } catch (error) {
+      renderCloudUi();
+      toast(error.message, "error");
+    }
+  }
+
+  async function removeCloudMember(email) {
+    const confirmed = await askConfirm({
+      title: "إلغاء وصول المستخدم؟",
+      text: `لن يتمكن ${email} من فتح هذه النتائج بعد الآن.`,
+      confirmText: "إلغاء الوصول"
+    });
+    if (!confirmed) return;
+    try {
+      await cloud.removeMember(email);
+      renderCloudUi();
+      toast("تم إلغاء وصول المستخدم.");
+    } catch (error) {
+      toast(error.message, "error");
+    }
+  }
+
+  function ensureCanModify() {
+    const snapshot = cloud?.snapshot();
+    if (snapshot?.authenticated && snapshot.canWrite === false) {
+      toast("هذه النتائج للعرض فقط. اطلب من المالك صلاحية التعديل.", "error");
+      return false;
+    }
+    return true;
+  }
+
   function showFormMessage(element, text) {
     element.textContent = text;
     element.hidden = false;
@@ -628,6 +978,7 @@
   }
 
   function openPlayerDialog(playerId = "") {
+    if (!ensureCanModify()) return;
     const player = playerId ? getPlayer(playerId) : null;
     elements.editingPlayerId.value = player?.id || "";
     elements.playerName.value = player?.name || "";
@@ -651,6 +1002,7 @@
   function addOrUpdatePlayer(event) {
     if (event.submitter?.value === "cancel") return;
     event.preventDefault();
+    if (!ensureCanModify()) return;
     const name = elements.playerName.value.trim().replace(/\s+/g, " ");
     const editingId = elements.editingPlayerId.value;
     if (name.length < 2) {
@@ -684,6 +1036,7 @@
   }
 
   async function handlePlayerAction(button) {
+    if (!ensureCanModify()) return;
     const player = getPlayer(button.dataset.playerId);
     if (!player) return;
     const action = button.dataset.playerAction;
@@ -721,6 +1074,7 @@
 
   function saveMatch(event) {
     event.preventDefault();
+    if (!ensureCanModify()) return;
     const firstId = elements.playerOne.value;
     const secondId = elements.playerTwo.value;
     const firstScore = Number.parseInt(elements.scoreOne.value, 10);
@@ -766,6 +1120,7 @@
   }
 
   async function deleteMatch(matchId) {
+    if (!ensureCanModify()) return;
     const match = state.matches.find((item) => item.id === matchId);
     if (!match) return;
     const first = getPlayer(match.playerOneId);
@@ -812,6 +1167,10 @@
 
   async function importBackup(file) {
     if (!file) return;
+    if (!ensureCanModify()) {
+      elements.importData.value = "";
+      return;
+    }
     try {
       const parsed = JSON.parse(await file.text());
       const incoming = parsed.data || parsed;
@@ -837,14 +1196,15 @@
   }
 
   async function resetAllData() {
+    if (!ensureCanModify()) return;
     const confirmed = await askConfirm({
       title: "مسح جميع البيانات؟",
-      text: "سيتم حذف كل اللاعبين والمباريات من هذا الجهاز نهائيًا. نزّل نسخة احتياطية أولاً إن كنت تحتاجها.",
+      text: "سيتم حذف كل اللاعبين والمباريات، وستنتقل عملية الحذف إلى حسابك السحابي عند المزامنة. نزّل نسخة احتياطية أولاً إن كنت تحتاجها.",
       confirmText: "مسح كل البيانات"
     });
     if (!confirmed) return;
     state = createInitialState();
-    localStorage.removeItem(STORAGE_KEY);
+    saveState();
     elements.playerSearch.value = "";
     renderAll();
     toast("تمت إعادة ضبط التطبيق.");
@@ -1167,8 +1527,14 @@
 
   function bindEvents() {
     window.addEventListener("hashchange", showView);
-    window.addEventListener("online", updateOnlineStatus);
-    window.addEventListener("offline", updateOnlineStatus);
+    window.addEventListener("online", () => {
+      updateOnlineStatus();
+      cloud?.handleOnline();
+    });
+    window.addEventListener("offline", () => {
+      updateOnlineStatus();
+      cloud?.handleOffline();
+    });
     window.addEventListener("storage", (event) => {
       if (event.key === STORAGE_KEY) {
         state = loadState();
@@ -1192,6 +1558,25 @@
     elements.matchForm.addEventListener("submit", saveMatch);
     elements.playerSearch.addEventListener("input", renderPlayers);
     elements.importData.addEventListener("change", () => importBackup(elements.importData.files?.[0]));
+    elements.cloudConfigForm.addEventListener("submit", saveCloudConfig);
+    elements.cloudAuthForm.addEventListener("submit", submitCloudAuth);
+    elements.cloudMemberForm.addEventListener("submit", addCloudMember);
+    elements.cloudWorkspace.addEventListener("change", switchCloudWorkspace);
+    elements.cloudMembersList.addEventListener("change", (event) => {
+      const roleSelect = event.target.closest("[data-member-role]");
+      if (roleSelect) updateCloudMember(roleSelect);
+    });
+    elements.cloudDialogClose.addEventListener("click", () => elements.cloudDialog.close());
+    elements.cloudBackToConfig.addEventListener("click", () => showCloudPanel("setup"));
+    elements.cloudPrimaryAction.addEventListener("click", () => openCloudDialog(!cloud?.snapshot().configured));
+    elements.cloudConfigure.addEventListener("click", () => openCloudDialog(true));
+    elements.cloudSyncNow.addEventListener("click", syncCloudNow);
+    elements.cloudSignOut.addEventListener("click", signOutCloud);
+    elements.cloudStatusButton.addEventListener("click", () => {
+      location.hash = "settings";
+      if (!cloud?.snapshot().authenticated) openCloudDialog(!cloud?.snapshot().configured);
+    });
+    $$('[data-auth-mode]').forEach((button) => button.addEventListener("click", () => setCloudAuthMode(button.dataset.authMode)));
     elements.playerOne.addEventListener("change", () => validatePlayerPair(elements.playerOne, elements.playerTwo, elements.playerOne));
     elements.playerTwo.addEventListener("change", () => validatePlayerPair(elements.playerOne, elements.playerTwo, elements.playerTwo));
     elements.h2hPlayerOne.addEventListener("change", () => {
@@ -1237,6 +1622,11 @@
         deleteMatch(deleteButton.dataset.deleteMatch);
         return;
       }
+      const removeMemberButton = event.target.closest("[data-remove-member]");
+      if (removeMemberButton) {
+        removeCloudMember(removeMemberButton.dataset.removeMember);
+        return;
+      }
       const reportTab = event.target.closest("[data-report-tab]");
       if (reportTab) {
         switchReportTab(reportTab.dataset.reportTab);
@@ -1266,7 +1656,10 @@
     renderAll();
     switchReportTab(activeReportTab);
     updateOnlineStatus();
+    renderCloudUi();
     showView();
+
+    cloud?.initialize();
 
     if (isStandalone()) elements.installQuickButton.hidden = true;
     if ("serviceWorker" in navigator && location.protocol.startsWith("http")) {

@@ -4,6 +4,6 @@
  * Never place a service_role key or any secret key in this file.
  */
 window.FOOTBALL_CLOUD_CONFIG = Object.freeze({
-  supabaseUrl: "",
-  supabaseAnonKey: ""
+  supabaseUrl: "https://tseniigzftrxvqaspnnp.supabase.co",
+  supabaseAnonKey: "sb_publishable_GbJUUPSnPeuat9w7VLJQZA_JHwRYnAi"
 });

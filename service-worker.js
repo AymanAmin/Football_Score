@@ -1,4 +1,4 @@
-const CACHE_NAME = "football-score-v1.3.0";
+const CACHE_NAME = "football-score-v1.3.1";
 const APP_SHELL = [
   "./",
   "./index.html",
@@ -13,8 +13,32 @@ const APP_SHELL = [
   "./icons/icon-maskable-512.png"
 ];
 
+const WRONG_SUPABASE_REF = "tseniigzftrxvqaspnnp";
+const CORRECT_SUPABASE_REF = "tseniigzftrxvqasprnp";
+
+async function correctedCloudConfig(request) {
+  const response = await fetch(request, { cache: "no-store" });
+  if (!response.ok) return response;
+  const text = (await response.text()).replaceAll(WRONG_SUPABASE_REF, CORRECT_SUPABASE_REF);
+  return new Response(text, {
+    status: response.status,
+    statusText: response.statusText,
+    headers: {
+      "Content-Type": "application/javascript; charset=utf-8",
+      "Cache-Control": "no-store"
+    }
+  });
+}
+
 self.addEventListener("install", (event) => {
-  event.waitUntil(caches.open(CACHE_NAME).then((cache) => cache.addAll(APP_SHELL)));
+  event.waitUntil((async () => {
+    const cache = await caches.open(CACHE_NAME);
+    const files = APP_SHELL.filter((item) => item !== "./cloud-config.js");
+    await cache.addAll(files);
+    const request = new Request("./cloud-config.js");
+    const response = await correctedCloudConfig(request);
+    await cache.put(request, response.clone());
+  })());
   self.skipWaiting();
 });
 
@@ -30,6 +54,20 @@ self.addEventListener("fetch", (event) => {
   if (event.request.method !== "GET") return;
   const requestUrl = new URL(event.request.url);
   if (requestUrl.hostname.endsWith(".supabase.co")) return;
+
+  if (requestUrl.pathname.endsWith("/cloud-config.js")) {
+    event.respondWith((async () => {
+      const cache = await caches.open(CACHE_NAME);
+      try {
+        const response = await correctedCloudConfig(event.request);
+        await cache.put(event.request, response.clone());
+        return response;
+      } catch {
+        return (await cache.match(event.request)) || new Response("", { status: 503 });
+      }
+    })());
+    return;
+  }
 
   if (event.request.mode === "navigate") {
     event.respondWith(

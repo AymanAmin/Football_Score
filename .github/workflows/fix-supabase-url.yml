@@ -35,3 +35,5 @@ jobs:
           git add cloud-config.js service-worker.js
           git commit -m "Fix Supabase project URL"
           git push
+
+# Triggered after the workflow existed on the default branch.
